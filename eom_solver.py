@@ -1,8 +1,8 @@
 # eom_solver
 
 # tangential acceleration*mass = thrust(~) + drag(~) - gravity(~)*mass
-# 
-# vectors 
+#
+# vectors
 
 import numpy as np
 
@@ -39,8 +39,8 @@ if __name__ == '__main__':
 	a_matrix = np.zeros(4)
 	v_matrix = np.zeros(4)
 	d_matrix = np.zeros(4)
-	while (d_matrix[-2] > -.01 ):
-		np.stack((d_matrix, np.array([-1,-1, -1,-1])))
+	d_matrix = np.vstack((d_matrix, d_matrix))
+	while (d_matrix[-1,-2] > -.01 ):
+		d = [-1,-1,-1,-1]
+		d_matrix = np.vstack((d_matrix, d))
 		print(d_matrix)
-
-
