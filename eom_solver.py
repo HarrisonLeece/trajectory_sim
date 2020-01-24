@@ -17,7 +17,7 @@ class Rocket():
 		self.dry_mass = dry_mass
 		self.front_area = front_area
 
-		
+
 
 
 
@@ -57,6 +57,7 @@ if __name__ == '__main__':
 	d_matrix = np.vstack((d_matrix, d_matrix))
 	thrust = [3000]
 	density = [14]
+	print('Change!')
 
 
 
