@@ -19,10 +19,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 #compThrust and compThrust2 from thrustCurve
-#compDensity from atmosphereDensity
-def compute_atm_density(alt):
-    s = -.2457039080 * (alt / 10**4)**1 - .0351850842 * (alt / 10**4)**2 + 0.0021044026 * (alt / 10**4)**3 - 0.0000390562 * (alt / 10**4)**4
-    return 23.77 * 10**(-4) * np.exp(s)
+
 
 def pressurant_thrust(self, init_thrust, init_m_dot, rocket_mass):
     thrust = init_thrust
@@ -32,7 +29,7 @@ def pressurant_thrust(self, init_thrust, init_m_dot, rocket_mass):
         mDot = 0
     return thrust, mDot
 
-def comp_mach(self, rocket_velocity):
+def comp_mach(self, rocket_velocity, temp):
     #convert v from ft/s to m/s
     v = rocket_velocity * .3048
     #R is the universal gas constant in kJ/(kg*K)
@@ -43,6 +40,26 @@ def comp_mach(self, rocket_velocity):
     a = (gamma * R * 1000 * temp)**.5
     mach = v / a
     return mach
+
+'''
+Curve fits below this line.
+@Author Harrison Leece harryleecemail@gmail.com
+'''
+
+#compDensity from atmosphereDensity
+def compute_atm_density(alt):
+    #altitude is in feet
+    s = -.2457039080 * (alt / 10**4)**1 - .0351850842 * (alt / 10**4)**2 + 0.0021044026 * (alt / 10**4)**3 - 0.0000390562 * (alt / 10**4)**4
+    return 23.77 * 10**(-4) * np.exp(s)
+def compute_atm_density_test():
+    altitude = np.linspace(0,400000,10000)
+    density_list = []
+    for alt in altitude:
+        density = compute_atm_density(alt)
+        density_list.append(density)
+    plt.plot(altitude,density_list)
+    plt.show()
+
 
 def comp_temp(self, altitude):
     #convert altiude from feet to meters
@@ -58,17 +75,17 @@ def comp_temp(self, altitude):
     temp = C + 273.15
     return temp
 
-def waveDrag(self):
-    adj = self.cd - .3
-    if(self.mach < .5085):
-        nCd = .6827 * self.mach**3 - .4297 * self.mach**2 - .0358 * self.mach + .3 + adj
-    elif(self.mach > .5085 and self.mach < 1.3618):
-        nCd = -0.7809 * self.mach**4 + 2.324 * self.mach**3 - 2.0189 * self.mach**2 + 0.6793 * self.mach + 0.1837 + adj
-    elif(self.mach > 1.3618 and self.mach < 4):
-        nCd = -.003495 * self.mach**6 + .07004 * self.mach**5 -.583 * self.mach**4 + 2.564 * self.mach**3 -6.186 * self.mach**2 + 7.466 * self.mach -2.923 + adj
+def wave_drag(self, mach, cd):
+    adj = cd - .3
+    if(mach < .5085):
+        ncd = .6827 * mach**3 - .4297 * mach**2 - .0358 * mach + .3 + adj
+    elif(mach > .5085 and mach < 1.3618):
+        ncd = -0.7809 * mach**4 + 2.324 * mach**3 - 2.0189 * mach**2 + 0.6793 * mach + 0.1837 + adj
+    elif(mach > 1.3618 and mach < 4):
+        ncd = -.003495 * mach**6 + .07004 * mach**5 -.583 * mach**4 + 2.564 * mach**3 -6.186 * self.mach**2 + 7.466 * self.mach -2.923 + adj
     else:
-        nCd = .2184 + adj
-    return nCd
+        ncd = .2184 + adj
+    return ncd
 
 #F_wr is wind in r direction
 #import drag, gravity, time, mass, thrust, gamma, alpha, and wind in all directions
@@ -159,3 +176,6 @@ class SIXDOF:
         sixeq = sixeqdiff(self, fw)
         state = odeint(sixeq, init_state)
         return state
+
+if __name__ == '__main__':
+    compute_atm_density_test()
