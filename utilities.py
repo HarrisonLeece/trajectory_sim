@@ -61,7 +61,7 @@ def compute_atm_density_test():
     plt.show()
 
 
-def comp_temp(self, altitude):
+def comp_temp(altitude):
     #convert altiude from feet to meters
     x = altitude * .3048
     if(x > 0 and x < 15354.016):
@@ -75,17 +75,39 @@ def comp_temp(self, altitude):
     temp = C + 273.15
     return temp
 
-def wave_drag(self, mach, cd):
+def compute_atm_temp_test():
+    altitude = np.linspace(1,400000,10000)
+    temp_list = []
+    for alt in altitude:
+        temp = comp_temp(alt)
+        temp_list.append(temp)
+    plt.plot(altitude,temp_list)
+    plt.show()
+
+def wave_drag(mach, cd):
     adj = cd - .3
     if(mach < .5085):
         ncd = .6827 * mach**3 - .4297 * mach**2 - .0358 * mach + .3 + adj
     elif(mach > .5085 and mach < 1.3618):
         ncd = -0.7809 * mach**4 + 2.324 * mach**3 - 2.0189 * mach**2 + 0.6793 * mach + 0.1837 + adj
     elif(mach > 1.3618 and mach < 4):
-        ncd = -.003495 * mach**6 + .07004 * mach**5 -.583 * mach**4 + 2.564 * mach**3 -6.186 * self.mach**2 + 7.466 * self.mach -2.923 + adj
+        ncd = -.003495 * mach**6 + .07004 * mach**5 -.583 * mach**4 + 2.564 * mach**3 -6.186 * mach**2 + 7.466 * mach -2.923 + adj
     else:
         ncd = .2184 + adj
     return ncd
+
+def compute_atm_wave_drag_test():
+    # set coeff of drag to .3 and vary mach between 0 and 6
+    cd = 0.3
+    mach = np.linspace(0,6,100)
+    ncd_list = []
+    for i in mach:
+        ncd = wave_drag(i, cd)
+        ncd_list.append(ncd)
+    plt.plot(mach,ncd_list)
+    plt.show()
+
+
 
 #F_wr is wind in r direction
 #import drag, gravity, time, mass, thrust, gamma, alpha, and wind in all directions
@@ -179,3 +201,5 @@ class SIXDOF:
 
 if __name__ == '__main__':
     compute_atm_density_test()
+    compute_atm_temp_test()
+    compute_atm_wave_drag_test()
