@@ -108,6 +108,48 @@ def compute_atm_wave_drag_test():
     plt.show()
 
 
+def calc_atm_press(alt):
+    '''@author Hannah Lane
+    @param alt, The altitude the rocket is at
+    @return pressure, the absolute pressure of the atmosphere at the
+            rocket's altitude in psia
+    '''
+    pressure = 14.7*np.exp((-0.366713637542122*10**-4)*alt+(-0.000001623765497*10**(-4)*alt**2+(0.000000000007584*10**(-4)*alt**3)))
+    return pressure
+
+def atm_press_test():
+    '''@author Hannah Lane
+    Testing block for the pressure function
+    '''
+    alts = np.linspace(0,150000, 10000)
+    pressure_vector = np.array([])
+    for alt in alts:
+        pressure = calc_atm_press(alt)
+        pressure_vector = np.append(pressure_vector, pressure)
+
+
+    plt.plot(alts, pressure_vector)
+    plt.xlabel("Pressure")
+    plt.ylabel("Altitude")
+    plt.show()
+
+def calc_thrust(mdot, nozzle_exit_velocity, nozzle_exit_pressure, area, alt, propellantmass):
+    '''
+    Note:  test must be written for this function.
+    Hold m_dot, exit pressure, area, nozzle_exit_velocity constant
+    provide an initial sea level thrust, and plot thrust vs altitude
+    '''
+    atm_press = calt_atm_press(alt)
+    F = mdot * nozzle_exit_velocity + (nozzle_exit_pressure - press1) * area
+    if propellantmass < .1:
+        thrust = 0
+        mDot = 0
+    else:
+        thrust = F
+        #Redundant,but explicit
+        mdot = mdot
+    return thrust, mDot
+
 
 #F_wr is wind in r direction
 #import drag, gravity, time, mass, thrust, gamma, alpha, and wind in all directions
@@ -203,3 +245,4 @@ if __name__ == '__main__':
     compute_atm_density_test()
     compute_atm_temp_test()
     compute_atm_wave_drag_test()
+    atm_press_test()
