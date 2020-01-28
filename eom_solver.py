@@ -20,7 +20,7 @@ class Rocket():
 		self.dry_mass = dry_mass
 		self.front_area = front_area
 		self.m_dot = 1
-		self.
+		#self.
 		#initialize some non-rocket data, importantfor analysis
 		self.time = []
 
