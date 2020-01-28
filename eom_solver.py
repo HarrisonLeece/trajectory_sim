@@ -127,7 +127,7 @@ class Rocket():
 		plt.show()
 def tangent_eom(thrust, theta, omega, mass, density, area, velocity, c_drag):
 	'''check this EoM for correct multiplcation to gravity'''
-	a_t = thrust/mass + (1/2)*c_drag*density*(velocity**2)/mass - GRAV*np.sin(theta)
+	a_t = thrust/mass - (1/2)*c_drag*density*(velocity**2)/mass - GRAV*np.sin(theta)
 	a_x = a_t*np.cos(theta)*np.cos(omega)
 	a_y = a_t*np.cos(theta)*np.sin(omega)
 	a_z = a_t*np.sin(theta)
