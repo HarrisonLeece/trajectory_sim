@@ -18,17 +18,6 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-#compThrust and compThrust2 from thrustCurve
-
-
-def pressurant_thrust(self, init_thrust, init_m_dot, rocket_mass):
-    thrust = init_thrust
-    mDot = init_m_dot
-    if rocket_mass < .1:
-        thrust = 0
-        mDot = 0
-    return thrust, mDot
-
 def comp_mach(self, rocket_velocity, temp):
     #convert v from ft/s to m/s
     v = rocket_velocity * .3048
@@ -40,6 +29,23 @@ def comp_mach(self, rocket_velocity, temp):
     a = (gamma * R * 1000 * temp)**.5
     mach = v / a
     return mach
+
+def calc_thrust(mdot, optimal_thrust, nozzle_exit_pressure, area, alt, propellantmass):
+    '''
+    Note:  test must be written for this function.
+    Hold m_dot, exit pressure, area, nozzle_exit_velocity constant
+    provide an initial sea level thrust, and plot thrust vs altitude
+    '''
+    atm_press = calt_atm_press(alt)
+    F = mdot * nozzle_exit_velocity + (nozzle_exit_pressure - press1) * area
+    if propellantmass < .1:
+        thrust = 0
+        mDot = 0
+    else:
+        thrust = F
+        #Redundant,but explicit
+        mdot = mdot
+    return thrust, mDot
 
 '''
 Curve fits below this line.
@@ -132,23 +138,6 @@ def atm_press_test():
     plt.xlabel("Pressure")
     plt.ylabel("Altitude")
     plt.show()
-
-def calc_thrust(mdot, nozzle_exit_velocity, nozzle_exit_pressure, area, alt, propellantmass):
-    '''
-    Note:  test must be written for this function.
-    Hold m_dot, exit pressure, area, nozzle_exit_velocity constant
-    provide an initial sea level thrust, and plot thrust vs altitude
-    '''
-    atm_press = calt_atm_press(alt)
-    F = mdot * nozzle_exit_velocity + (nozzle_exit_pressure - press1) * area
-    if propellantmass < .1:
-        thrust = 0
-        mDot = 0
-    else:
-        thrust = F
-        #Redundant,but explicit
-        mdot = mdot
-    return thrust, mDot
 
 
 #F_wr is wind in r direction

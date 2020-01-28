@@ -5,59 +5,90 @@
 # vectors
 
 import numpy as np
-from .utilites import compute_atm_density as comp_dense
-
+from .utilites import compute_atm_density as comp_dens
+from .utilities import calc_thrust
+from .utilities import comp_mach
+from .utilities import wave_drag
 
 class Rocket():
+	#acceleration due to gravity in ft/s^2
+	GRAV = 32.174
 
-	def __init__(self, sl_thrust, i_sp, total_mass, dry_mass, front_area, cd):
+	def __init__(self, sl_thrust, optimal_thrust, nozzle_exit_p, nozzle_area, i_sp_sl, total_weight, dry_weight, front_area, cd):
 		#Initialize rocket parameters at sea level, in lists
 		self.thrust = [sl_thrust]
-		self.i_sp = [i_sp]
-		self.total_mass = [total_mass]
+		self.i_sp = [i_sp_sl]
+		self.total_mass = [total_weight/GRAV]
 		self.cd = [cd]
 		#initialize rocket parameters which do not change
-		self.dry_mass = dry_mass
+		self.dry_mass = dry_weight/GRAV
 		self.front_area = front_area
-		self.m_dot = 1
-		#self.
-		#initialize some non-rocket data, importantfor analysis
-		self.time = []
+		self.optimal_thrust = optimal_thrust
+		self.nozzle_exit_p = nozzle_exit_p
+		self.nozzle_area = nozzle_area
+		self.m_dot = sl_thrust/(i_sp_sl * GRAV)
 
-	def three_dof_sim(self):
+		#initialize some non-rocket data which is important for analysis
+		self.time = [0]
+		self.mach = [0]
 		#initiate matricies
-		a_matrix = np.zeros(4)
-		v_matrix = np.zeros(4)
-		d_matrix = np.zeros(4)
-		d_matrix = np.vstack((d_matrix, d_matrix))
+		self.a_matrix = np.zeros(4)
+		self.v_matrix = np.zeros(4)
+		self.d_matrix = np.zeros(4)
+		self.d_matrix = np.vstack((d_matrix, d_matrix))
 
-		print('Change!')
-
+	def three_dof_sim(self, step):
+		print('Starting up the simulation:')
 		while (d_matrix[-1,2] > -.01 ):
+			#Get altitude and tangential velocity (we use these a lot)
+			current_alt = self.d_matrix[-1,2]
+			v_t = self.v_matrix[-1,3]
+			theta = 85 * np.pi/180
+			omega = 45 * np.pi/180
 			'''
 			1) Get current atomspheric state
 			'''
 			#atmospheric density is a function of altitude only (d_z)
-			atm_rho = compute_atm_density(d_matrix[-1,2])
+			atm_rho = compute_atm_density(current_alt)
 			#atmospheric temperature is a function of altitude only (d_z)
-			atm_t = compute_temp(d_matrix[-1,2])
+			atm_temp = compute_temp(current_alt)
+			#mach number rocket is at
+			mach = comp_mach(v_t, atm_temp)
 			#Here would be the code to implement the gust model, magnitude
 			#depending on current altitude
 			'''
 			2) Get current rocket state at time, altitude and etc...
 			'''
 			#Calculate coefficeient of drag, accounting for wave drag
-
+			cd = wave_drag(mach, self.cd[0])
 			#Calculate thrust, accounting for nozzle expansion ratio and
 			#aerostatic back pressure loss
-
+			thrust = calc_thrust(self.mdot, self.optimal_thrust, self.nozzle_exit_p, self.nozzle_area, current_alt, (self.total_mass[-1] - self.dry_mass))
 			'''
 			3) Run Equations of Motion, using gathered state information
 			'''
+			a_array = tangent_eom(thrust, theta, omega, self.total_mass[-1], atm_rho, self.front_area, v_t, cd)
+			#very crude numerical integration method
+			v_array, d_array = integrate_eom(a_array,step, self.d_matrix, self.v_matrix)
+			'''
+			4) Update values on rocket which change only as a function of time
+			Eg.  Mass, staging, parachute if these values are modeled
+			'''
+			self.total_mass.append(self.total_mass - self.mdot *step)
+			'''
+			5) Organize/Parse data.  Update instance varaibles
+			'''
+			#update time
+			self.time.append(self.time + step)
+			#Update positional data
+			self.a_matrix = self.a_matrix.vstack(a_array)
+			self.v_matrix = self.v_matrix.vstack(v_array)
+			self.d_matrix = self.d_matrix.vstack(d_array)
+			#other data
+			self.thrust.append(thrust)
+			self.mach.append(mach)
+			self.cd.append(cd)
 
-			'''
-			4) Organize/Parse data.  Update instance varaibles
-			'''
 
 			#Retart the loop
 
@@ -76,24 +107,25 @@ def tangent_eom(thrust, theta, omega, mass, density, area, velocity, c_drag):
 
 	return a_array
 
-def integrate_eom(a_list, step_size, d_matrix, v_matrix):
-	v_x = v_matrix[-1,0] + a_list[0]*step_size
-	v_y = v_matrix[-1,1] + a_list[1]*step_size
-	v_z = v_matrix[-1,2] + a_list[2]*step_size
-	v_t = v_matrix[-1,3] + a_list[3]*step_size
+def integrate_eom(a_array, step_size, d_matrix, v_matrix):
+	v_x = v_matrix[-1,0] + a_array[0]*step_size
+	v_y = v_matrix[-1,1] + a_array[1]*step_size
+	v_z = v_matrix[-1,2] + a_array[2]*step_size
+	v_t = v_matrix[-1,3] + a_array[3]*step_size
 
-	v_list = np.array([v_x, v_y, v_z, v_t])
+	v_array = np.array([v_x, v_y, v_z, v_t])
 
-	d_x = d_matrix[-1,0] + v_list[0]*step_size + .5*a_list[0]*step_size**2
-	d_y = d_matrix[-1,1] + v_list[1]*step_size + .5*a_list[1]*step_size**2
-	d_z = d_matrix[-1,2] + v_list[2]*step_size + .5*a_list[2]*step_size**2
-	d_t = d_matrix[-1,3] + v_list[3]*step_size + .5*a_list[3]*step_size**2
+	d_x = d_matrix[-1,0] + v_matrix[-1,0]*step_size + .5*a_array[0]*step_size**2
+	d_y = d_matrix[-1,1] + v_matrix[-1,1]*step_size + .5*a_array[1]*step_size**2
+	d_z = d_matrix[-1,2] + v_matrix[-1,2]*step_size + .5*a_array[2]*step_size**2
+	d_t = d_matrix[-1,3] + v_matrix[-1,3]*step_size + .5*a_array[3]*step_size**2
 
-	d_list = np.array([d_x, d_y, d_z, d_t])
+	d_array = np.array([d_x, d_y, d_z, d_t])
 
 	return v_list, d_list
 
 if __name__ == '__main__':
-	thedude = Rocket(3000, 230, 730, 300, np.pi*(11.2/12)^2, .25)
-	thedude.three_dof_sim()
-	print('Running the main!')
+	#enter parameters in this order:
+	#sl_thrust(lbs), optimal_thrust, nozzle_exit_p (psi), nozzle_area (in^2), i_sp_sl, total_weight(lbf), dry_weight, front_area(ft), cd
+	thedude = Rocket(3000, 3250, 43.78772307748711, 230, 730, 300, np.pi*(11.2/12)^2, .25)
+	thedude.three_dof_sim(.05)
