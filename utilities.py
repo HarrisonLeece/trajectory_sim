@@ -18,7 +18,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-def comp_mach(self, rocket_velocity, temp):
+def comp_mach(rocket_velocity, temp):
     #convert v from ft/s to m/s
     v = rocket_velocity * .3048
     #R is the universal gas constant in kJ/(kg*K)
@@ -36,16 +36,16 @@ def calc_thrust(mdot, optimal_thrust, nozzle_exit_pressure, area, alt, propellan
     Hold m_dot, exit pressure, area, nozzle_exit_velocity constant
     provide an initial sea level thrust, and plot thrust vs altitude
     '''
-    atm_press = calt_atm_press(alt)
-    F = mdot * nozzle_exit_velocity + (nozzle_exit_pressure - press1) * area
+    atm_press = calc_atm_press(alt)
+    F = optimal_thrust + (nozzle_exit_pressure - atm_press) * area
     if propellantmass < .1:
         thrust = 0
-        mDot = 0
+        mdot = 0
     else:
         thrust = F
         #Redundant,but explicit
         mdot = mdot
-    return thrust, mDot
+    return thrust, mdot
 
 '''
 Curve fits below this line.
