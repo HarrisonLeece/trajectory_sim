@@ -47,10 +47,15 @@ class Rocket():
 
 	def three_dof_sim(self, step):
 		print('Starting up the simulation:')
+		#might use these to convert to vector form later
+		#v_hat_0 = np.array(.996,.7071,.7071)
+		#v_hat = v_hat_0 / linalg.norm(v_hat_0)
+
 		while (self.d_matrix[-1,2] > -.01 ):
 			#Get altitude and tangential velocity (we use these a lot)
 			current_alt = self.d_matrix[-1,2]
-			print('Current Altitude: {}'.format(current_alt))
+			#print(current_alt)
+			#print('Current Altitude: {}'.format(current_alt))
 			v_t = self.v_matrix[-1,3]
 			theta = 85 * np.pi/180
 			omega = 45 * np.pi/180
@@ -62,7 +67,7 @@ class Rocket():
 			#atmospheric temperature is a function of altitude only (d_z)
 			atm_temp = comp_temp(current_alt)
 			#mach number rocket is at
-			mach = comp_mach(v_t, atm_temp)
+			mach = comp_mach(abs(v_t), atm_temp)
 			#Here would be the code to implement the gust model, magnitude
 			#depending on current altitude
 			'''
@@ -109,9 +114,55 @@ class Rocket():
 		ax = plt.axes(projection='3d')
 		ax.set_xlabel('x')
 		ax.set_ylabel('y')
-		ax.set_zlabel('z');
-		ax.plot3D(self.d_matrix[:,0], self.d_matrix[:,1], self.d_matrix[:,2], c=self.d_matrix[:,2], cmap='Greens')
+		ax.set_zlabel('z')
+		ax.plot3D(self.d_matrix[:,0], self.d_matrix[:,1], self.d_matrix[:,2], 'gray')
 		plt.show()
+	def plot_all(self):
+		plt.figure()
+		plt.subplot(3,1,1)
+		plt.plot(self.time, self.d_matrix[:,0])
+		plt.subplot(3,1,2)
+		plt.plot(self.time, self.v_matrix[:,0])
+		plt.subplot(3,1,3)
+		plt.plot(self.time, self.a_matrix[:,0])
+		plt.figure()
+		plt.subplot(3,1,1)
+		plt.plot(self.time, self.d_matrix[:,1])
+		plt.subplot(3,1,2)
+		plt.plot(self.time, self.v_matrix[:,1])
+		plt.subplot(3,1,3)
+		plt.plot(self.time, self.a_matrix[:,1])
+		plt.figure()
+		plt.subplot(3,1,1)
+		plt.plot(self.time, self.d_matrix[:,2])
+		plt.subplot(3,1,2)
+		plt.plot(self.time, self.v_matrix[:,2])
+		plt.subplot(3,1,3)
+		plt.plot(self.time, self.a_matrix[:,2])
+		plt.figure()
+		plt.subplot(3,1,1)
+		plt.plot(self.time, self.d_matrix[:,3])
+		plt.subplot(3,1,2)
+		plt.plot(self.time, self.v_matrix[:,3])
+		plt.subplot(3,1,3)
+		plt.plot(self.time, self.a_matrix[:,3])
+		plt.figure()
+		plt.plot(self.time,self.thrust)
+		plt.show()
+	def plot_accel(self):
+		plt.figure()
+		plt.subplot(2,1,1)
+		plt.title('Displacement vs time')
+		plt.xlabel('time (s)')
+		plt.ylabel('displacement (feet)')
+		plt.plot(self.time, self.a_matrix[:,3])
+		plt.subplot(2,1,2)
+		plt.title('Displacement vs time')
+		plt.xlabel('time (s)')
+		plt.ylabel('tangential velocity (feet/s)')
+		plt.plot(self.time, self.a_matrix[:,0])
+		plt.show()
+
 	def plot_mains(self):
 		plt.figure()
 		plt.subplot(2,1,1)
@@ -127,10 +178,10 @@ class Rocket():
 		plt.show()
 def tangent_eom(thrust, theta, omega, mass, density, area, velocity, c_drag):
 	'''check this EoM for correct multiplcation to gravity'''
-	a_t = thrust/mass - (1/2)*c_drag*density*(velocity**2)/mass - GRAV*np.sin(theta)
+	a_prime = thrust/mass - (1/2)*c_drag*area*density*(velocity**2)/mass - GRAV*np.sin(theta)
 	a_x = a_t*np.cos(theta)*np.cos(omega)
 	a_y = a_t*np.cos(theta)*np.sin(omega)
-	a_z = a_t*np.sin(theta)
+	a_z = a_t*np.sin(theta) - GRAV
 
 	a_array = np.array([a_x, a_y, a_z, a_t])
 
@@ -156,6 +207,8 @@ def integrate_eom(a_array, step_size, d_matrix, v_matrix):
 if __name__ == '__main__':
 	#enter parameters in this order:
 	#sl_thrust(lbs), optimal_thrust, nozzle_exit_p (psi), nozzle_area (in^2), i_sp_sl, total_weight(lbf), dry_weight, front_area(ft), cd
-	thedude = Rocket(3038.868, 3250, 8.103, 43.78772307748711, 230, 730, 300, np.pi*(11.2/12)**2, .25)
-	thedude.three_dof_sim(.001)
-	thedude.plot_mains()
+	thedude = Rocket(3038.868, 3250, 8.103, 43.78772307748711, 230, 730, 330, np.pi/4*(11.2/12)**2, .25)
+	thedude.three_dof_sim(.05)
+	#thedude.plot_mains()
+	thedude.plot_xyz()
+	thedude.plot_all()
