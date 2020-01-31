@@ -10,6 +10,8 @@ from utilities import comp_temp
 from utilities import calc_thrust
 from utilities import comp_mach
 from utilities import wave_drag
+from utilities import integrate_eom
+from utilities import eom
 import matplotlib.pyplot as plt
 #The below allows matplotlibt to plot 3d axis
 from mpl_toolkits import mplot3d
@@ -50,15 +52,22 @@ class Rocket():
 		#might use these to convert to vector form later
 		#v_hat_0 = np.array(.996,.7071,.7071)
 		#v_hat = v_hat_0 / linalg.norm(v_hat_0)
-
+		rail = True
+		theta = 85 * np.pi/180
+		omega = 45 * np.pi/180
 		while (self.d_matrix[-1,2] > -.01 ):
+			if (rail == True):
+				self.v_matrix[-1,2] = .000001*np.sin(theta)
+				self.v_matrix[-1,0] = .000001*np.cos(theta)*np.cos(omega)
+				self.v_matrix[-1,1] = .000001*np.cos(theta)*np.sin(omega)
+				rail = False
+
+
 			#Get altitude and tangential velocity (we use these a lot)
 			current_alt = self.d_matrix[-1,2]
 			#print(current_alt)
 			#print('Current Altitude: {}'.format(current_alt))
 			v_t = self.v_matrix[-1,3]
-			theta = 85 * np.pi/180
-			omega = 45 * np.pi/180
 			'''
 			1) Get current atomspheric state
 			'''
@@ -81,9 +90,9 @@ class Rocket():
 			'''
 			3) Run Equations of Motion, using gathered state information
 			'''
-			a_array = tangent_eom(thrust, theta, omega, self.total_mass[-1], atm_rho, self.front_area, v_t, cd)
+			a_array = eom_vector(thrust, self.total_mass[-1], atm_rho, self.front_area, self.v_matrix[-1,:], cd)
 			#very crude numerical integration method
-			v_array, d_array = integrate_eom(a_array,step, self.d_matrix, self.v_matrix)
+			v_array, d_array = integrate_eom_vector(a_array,step, self.d_matrix, self.v_matrix)
 			'''
 			4) Update values on rocket which change only as a function of time
 			Eg.  Mass, staging, parachute if these values are modeled
@@ -118,34 +127,14 @@ class Rocket():
 		ax.plot3D(self.d_matrix[:,0], self.d_matrix[:,1], self.d_matrix[:,2], 'gray')
 		plt.show()
 	def plot_all(self):
-		plt.figure()
-		plt.subplot(3,1,1)
-		plt.plot(self.time, self.d_matrix[:,0])
-		plt.subplot(3,1,2)
-		plt.plot(self.time, self.v_matrix[:,0])
-		plt.subplot(3,1,3)
-		plt.plot(self.time, self.a_matrix[:,0])
-		plt.figure()
-		plt.subplot(3,1,1)
-		plt.plot(self.time, self.d_matrix[:,1])
-		plt.subplot(3,1,2)
-		plt.plot(self.time, self.v_matrix[:,1])
-		plt.subplot(3,1,3)
-		plt.plot(self.time, self.a_matrix[:,1])
-		plt.figure()
-		plt.subplot(3,1,1)
-		plt.plot(self.time, self.d_matrix[:,2])
-		plt.subplot(3,1,2)
-		plt.plot(self.time, self.v_matrix[:,2])
-		plt.subplot(3,1,3)
-		plt.plot(self.time, self.a_matrix[:,2])
-		plt.figure()
-		plt.subplot(3,1,1)
-		plt.plot(self.time, self.d_matrix[:,3])
-		plt.subplot(3,1,2)
-		plt.plot(self.time, self.v_matrix[:,3])
-		plt.subplot(3,1,3)
-		plt.plot(self.time, self.a_matrix[:,3])
+		for i in range (0,2):
+			plt.figure()
+			plt.subplot(3,1,1)
+			plt.plot(self.time, self.d_matrix[:,i])
+			plt.subplot(3,1,2)
+			plt.plot(self.time, self.v_matrix[:,i])
+			plt.subplot(3,1,3)
+			plt.plot(self.time, self.a_matrix[:,i])
 		plt.figure()
 		plt.plot(self.time,self.thrust)
 		plt.show()
@@ -176,33 +165,7 @@ class Rocket():
 		plt.ylabel('tangential velocity (feet/s)')
 		plt.plot(self.time, self.v_matrix[:,3])
 		plt.show()
-def tangent_eom(thrust, theta, omega, mass, density, area, velocity, c_drag):
-	'''check this EoM for correct multiplcation to gravity'''
-	a_prime = thrust/mass - (1/2)*c_drag*area*density*(velocity**2)/mass - GRAV*np.sin(theta)
-	a_x = a_t*np.cos(theta)*np.cos(omega)
-	a_y = a_t*np.cos(theta)*np.sin(omega)
-	a_z = a_t*np.sin(theta) - GRAV
 
-	a_array = np.array([a_x, a_y, a_z, a_t])
-
-	return a_array
-
-def integrate_eom(a_array, step_size, d_matrix, v_matrix):
-	v_x = v_matrix[-1,0] + a_array[0]*step_size
-	v_y = v_matrix[-1,1] + a_array[1]*step_size
-	v_z = v_matrix[-1,2] + a_array[2]*step_size
-	v_t = v_matrix[-1,3] + a_array[3]*step_size
-
-	v_array = np.array([v_x, v_y, v_z, v_t])
-
-	d_x = d_matrix[-1,0] + v_matrix[-1,0]*step_size + .5*a_array[0]*step_size**2
-	d_y = d_matrix[-1,1] + v_matrix[-1,1]*step_size + .5*a_array[1]*step_size**2
-	d_z = d_matrix[-1,2] + v_matrix[-1,2]*step_size + .5*a_array[2]*step_size**2
-	d_t = d_matrix[-1,3] + v_matrix[-1,3]*step_size + .5*a_array[3]*step_size**2
-
-	d_array = np.array([d_x, d_y, d_z, d_t])
-
-	return v_array, d_array
 
 if __name__ == '__main__':
 	#enter parameters in this order:
